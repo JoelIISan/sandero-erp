@@ -1,0 +1,6 @@
+{
+  "name": "Sandero Manufacturing ERP Dashboard",
+  "description": "Dashboard ERP móvil de una sola página para la gestión en tiempo real de facturas, inventario, cuentas y contactos de Sandero Manufacturing, integrado con Google Sheets y webhook de Make.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
