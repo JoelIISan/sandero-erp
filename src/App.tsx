@@ -177,21 +177,43 @@ export default function App() {
     return value.toString();
   };
 
-  // Generic Row Parser for Google Sheets values 2D array
+// Generic Row Parser optimizado para saltar títulos decorativos y mapear columnas DOP
   const parseSheetRows = <T extends object>(rows: string[][], fields: (keyof T)[]): T[] => {
-    if (!rows || rows.length <= 1) return [];
-    const headers = rows[0].map(h => h.trim().toLowerCase());
+    if (!rows || rows.length === 0) return [];
     
-    return rows.slice(1).map((row) => {
+    // 1. Encontrar la verdadera fila de encabezados (saltando decoraciones como "--- TABLA ---")
+    let headerIdx = -1;
+    for (let i = 0; i < rows.length; i++) {
+      const isDecoration = rows[i].some(cell => cell && cell.trim().startsWith("---"));
+      const hasFields = rows[i].some(cell => cell && (cell.trim().toLowerCase() === "sku" || cell.trim().toLowerCase() === "ncf" || cell.trim().toLowerCase() === "id_factura"));
+      
+      if (!isDecoration && hasFields) {
+        headerIdx = i;
+        break;
+      }
+    }
+    
+    // Si no encuentra una fila válida, intenta usar la primera por defecto
+    if (headerIdx === -1) headerIdx = 0;
+    
+    const headers = rows[headerIdx].map(h => h ? h.trim().toLowerCase() : "");
+    const dataRows = rows.slice(headerIdx + 1);
+    
+    return dataRows.map((row) => {
       const obj: any = {};
       fields.forEach((field) => {
         const fieldNameLower = String(field).toLowerCase();
+        
+        // Buscador flexible con fallbacks para tus nombres reales de columnas
         let colIdx = headers.indexOf(fieldNameLower);
         
-        // Soft fallback for matches like 'Price_Venta' / 'precio_venta'
         if (colIdx === -1) {
-          if (fieldNameLower === 'price_venta') {
-            colIdx = headers.findIndex(h => h.includes('price') || h.includes('venta'));
+          if (fieldNameLower === 'price_venta' || fieldNameLower === 'precio_venta') {
+            colIdx = headers.findIndex(h => h.includes('venta') || h.includes('price'));
+          } else if (fieldNameLower === 'precio_compra') {
+            colIdx = headers.findIndex(h => h.includes('costo') || h.includes('compra'));
+          } else if (fieldNameLower === 'rnc_facturado' || fieldNameLower === 'rnc_cedula') {
+            colIdx = headers.findIndex(h => h.includes('rnc') || h.includes('cedula'));
           } else {
             colIdx = headers.findIndex(h => h.includes(fieldNameLower) || fieldNameLower.includes(h));
           }
@@ -199,13 +221,14 @@ export default function App() {
         
         if (colIdx !== -1 && colIdx < row.length) {
           const cellValue = row[colIdx];
-          // Check if key should be treated as numeric
+          
+          // Limpieza de campos numéricos (remover símbolos de DOP, comas, etc.)
           const numericFields = [
             'total_neto_dop', 'cargos_envio', 'ajustes', 'total_itbis_dop', 'total_general_dop',
             'price_venta', 'precio_compra', 'stock_actual', 'stock_minimo', 'balance_actual'
           ];
+          
           if (numericFields.includes(fieldNameLower)) {
-            // Strip any DOP$, USD, comma symbols
             const cleanNumberStr = (cellValue || '0').replace(/[^0-9.-]+/g, "");
             const parsedNum = parseFloat(cleanNumberStr);
             obj[field] = isNaN(parsedNum) ? 0 : parsedNum;
@@ -213,7 +236,7 @@ export default function App() {
             obj[field] = cellValue || '';
           }
         } else {
-          // Defaults if column doesn't exist
+          // Valores por defecto si la columna no existe en la pestaña
           const numericFields = [
             'total_neto_dop', 'cargos_envio', 'ajustes', 'total_itbis_dop', 'total_general_dop',
             'price_venta', 'precio_compra', 'stock_actual', 'stock_minimo', 'balance_actual'
