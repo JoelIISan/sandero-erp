@@ -57,6 +57,7 @@ const API_KEY = "AIzaSyDa12JRD9wwqBqJtFHsk3mJHrsrfJlFvN0";
 const MAKE_WEBHOOK_URL = "https://hook.us2.make.com/eybuvjkukv3ljtq8v5ohm88xq3zualkx";
 
 export default function App() {
+  const [debugLogs, setDebugLogs] = useState<string[]>(["Inicializando ERP Sandero v2.5..."]);
   // Navigation Tabs: 'dashboard' | 'facturacion' | 'inventario' | 'contactos'
   const [activeTab, setActiveTab] = useState<"dashboard" | "facturacion" | "inventario" | "contactos" >("dashboard");
   
