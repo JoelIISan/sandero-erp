@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect, useMemo, FormEvent } from "react";
+import DebugConsole from "./DebugConsole";
 import { 
   ResponsiveContainer, 
   AreaChart, 
