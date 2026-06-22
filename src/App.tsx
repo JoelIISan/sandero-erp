@@ -177,15 +177,26 @@ export default function App() {
     return value.toString();
   };
 
-// Generic Row Parser optimizado para saltar títulos decorativos y mapear columnas DOP
+// Generic Row Parser optimizado para saltar títulos decorativos y mapear columnas reales
   const parseSheetRows = <T extends object>(rows: string[][], fields: (keyof T)[]): T[] => {
     if (!rows || rows.length === 0) return [];
     
     // 1. Encontrar la verdadera fila de encabezados (saltando decoraciones como "--- TABLA ---")
     let headerIdx = -1;
     for (let i = 0; i < rows.length; i++) {
+      if (!rows[i] || rows[i].length === 0) continue;
+      
+      const firstCell = rows[i].find(cell => cell && cell.trim() !== "");
       const isDecoration = rows[i].some(cell => cell && cell.trim().startsWith("---"));
-      const hasFields = rows[i].some(cell => cell && (cell.trim().toLowerCase() === "sku" || cell.trim().toLowerCase() === "ncf" || cell.trim().toLowerCase() === "id_factura"));
+      
+      // Si la fila tiene palabras clave como "sku", "ncf" o "id_factura", esta es nuestra fila de encabezados
+      const hasFields = rows[i].some(cell => cell && (
+        cell.trim().toLowerCase() === "sku" || 
+        cell.trim().toLowerCase() === "ncf" || 
+        cell.trim().toLowerCase() === "id_factura" ||
+        cell.trim().toLowerCase() === "id_cuenta" ||
+        cell.trim().toLowerCase() === "id_contacto"
+      ));
       
       if (!isDecoration && hasFields) {
         headerIdx = i;
@@ -193,7 +204,7 @@ export default function App() {
       }
     }
     
-    // Si no encuentra una fila válida, intenta usar la primera por defecto
+    // Si no encuentra una fila válida, usa la primera por defecto
     if (headerIdx === -1) headerIdx = 0;
     
     const headers = rows[headerIdx].map(h => h ? h.trim().toLowerCase() : "");
@@ -204,7 +215,7 @@ export default function App() {
       fields.forEach((field) => {
         const fieldNameLower = String(field).toLowerCase();
         
-        // Buscador flexible con fallbacks para tus nombres reales de columnas
+        // Buscador flexible con fallbacks para tus nombres reales de columnas en DOP
         let colIdx = headers.indexOf(fieldNameLower);
         
         if (colIdx === -1) {
@@ -214,6 +225,8 @@ export default function App() {
             colIdx = headers.findIndex(h => h.includes('costo') || h.includes('compra'));
           } else if (fieldNameLower === 'rnc_facturado' || fieldNameLower === 'rnc_cedula') {
             colIdx = headers.findIndex(h => h.includes('rnc') || h.includes('cedula'));
+          } else if (fieldNameLower === 'tipo_ncf_defecto') {
+            colIdx = headers.findIndex(h => h.includes('ncf') || h.includes('defecto'));
           } else {
             colIdx = headers.findIndex(h => h.includes(fieldNameLower) || fieldNameLower.includes(h));
           }
@@ -222,7 +235,7 @@ export default function App() {
         if (colIdx !== -1 && colIdx < row.length) {
           const cellValue = row[colIdx];
           
-          // Limpieza de campos numéricos (remover símbolos de DOP, comas, etc.)
+          // Limpieza estricta de campos numéricos
           const numericFields = [
             'total_neto_dop', 'cargos_envio', 'ajustes', 'total_itbis_dop', 'total_general_dop',
             'price_venta', 'precio_compra', 'stock_actual', 'stock_minimo', 'balance_actual'
@@ -236,7 +249,7 @@ export default function App() {
             obj[field] = cellValue || '';
           }
         } else {
-          // Valores por defecto si la columna no existe en la pestaña
+          // Valores por defecto si la columna no existe en tu pestaña
           const numericFields = [
             'total_neto_dop', 'cargos_envio', 'ajustes', 'total_itbis_dop', 'total_general_dop',
             'price_venta', 'precio_compra', 'stock_actual', 'stock_minimo', 'balance_actual'
