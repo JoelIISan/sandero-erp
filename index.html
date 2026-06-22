@@ -8,7 +8,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsDlCWU3cMx7zqqJAIsLC9BvSy53f53TMDk/pvw6L+8/8A31v9u19c4d9y2B50x6C4p+fGqX9W9T6gX7MvE/==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><DebugConsole 
+    sheetId={SHEET_ID}
+    isUsingFallback={isUsingFallback}
+    facturasCount={facturas.length}
+    inventarioCount={inventario.length}
+    cuentasCount={cuentas.length}
+    contactosCount={contactos.length}
+    rawLogs={debugLogs}
+  /></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
