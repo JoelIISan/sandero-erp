@@ -260,172 +260,128 @@ export default function App() {
     });
   };
 
-  // Real-time Fetch from Google Sheets API
+ // Real-time Fetch con Inyección de Registros de Depuración (Logs)
   const fetchGoogleSheetsData = async () => {
     setIsLoading(true);
     setSheetFetchStatus("Conectando con Google API...");
-    let loadedPestañas = 0;
+    // Limpiamos los logs anteriores y empezamos el escaneo en limpio
+    setDebugLogs(["[CONEXIÓN] Iniciando consulta de base de datos..."]);
     
-    // 1. Fetch e integración de Facturas
     try {
-      const response = await fetch(
+      // 1. PROCESAR FACTURAS
+      setDebugLogs(prev => [...prev, "[FACTURAS] Solicitando datos a Google API..."]);
+      const facturasResponse = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Facturas?key=${API_KEY}`
       );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.values && data.values.length > 0) {
-          const parsed = parseSheetRows<Factura>(data.values, [
-            "ID_Factura", "Fecha", "Cliente_ID", "RNC_Facturado", "NCF", 
-            "Terminos_Pago", "Vencimiento", "Vendedor", "Asunto", 
-            "Total_Neto_DOP", "Cargos_Envio", "Ajustes", "Total_ITBIS_DOP", 
-            "Total_General_DOP", "Estado_Pago"
-          ]);
-          if (parsed.length > 0) {
-            setFacturas(parsed);
-            loadedPestañas++;
-          }
-        }
+      if (!facturasResponse.ok) {
+        setDebugLogs(prev => [...prev, `❌ [FACTURAS] Error HTTP de Google: ${facturasResponse.status}`]);
+        throw new Error("Acceso a pestaña Facturas denegado");
       }
-    } catch (e) {
-      console.warn("Error al cargar Facturas, usando local.", e);
-    }
+      const facturasData = await facturasResponse.json();
+      setDebugLogs(prev => [...prev, `✓ [FACTURAS] Descarga exitosa. Registros: ${facturasData.values ? facturasData.values.length : 0}`]);
 
-    // 2. Fetch e integración de Inventario
-    try {
-      const response = await fetch(
+      // 2. PROCESAR INVENTARIO
+      setDebugLogs(prev => [...prev, "[INVENTARIO] Solicitando datos a Google API..."]);
+      const inventarioResponse = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Inventario?key=${API_KEY}`
       );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.values && data.values.length > 0) {
-          const parsed = parseSheetRows<Inventario>(data.values, [
-            "SKU", "Nombre_Articulo", "Tipo", "Categoria", "Unidad_Medida", 
-            "Price_Venta", "Precio_Compra", "Stock_Actual", "Stock_Minimo", "Cuenta_Contable"
-          ]);
-          
-          // Sanitizado preventivo para asegurar categorías válidas en gráficos
-          const sanitized = parsed.map(item => ({
-            ...item,
-            Categoria: item.Categoria || "Productos Plásticos",
-            Cuenta_Contable: item.Cuenta_Contable || "Inventario Central"
-          }));
-
-          if (sanitized.length > 0) {
-            setInventario(sanitized);
-            loadedPestañas++;
-          }
-        }
+      if (!inventarioResponse.ok) {
+        setDebugLogs(prev => [...prev, `❌ [INVENTARIO] Error HTTP de Google: ${inventarioResponse.status}`]);
+        throw new Error("Acceso a pestaña Inventario denegado");
       }
-    } catch (e) {
-      console.warn("Error al cargar Inventario, usando local.", e);
-    }
+      const inventarioData = await inventarioResponse.json();
+      setDebugLogs(prev => [...prev, `✓ [INVENTARIO] Descarga exitosa. Registros: ${inventarioData.values ? inventarioData.values.length : 0}`]);
 
-    // 3. Fetch e integración de Cuentas
-    try {
-      const response = await fetch(
+      // 3. PROCESAR CUENTAS
+      setDebugLogs(prev => [...prev, "[CUENTAS] Solicitando datos a Google API..."]);
+      const cuentasResponse = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Cuentas?key=${API_KEY}`
       );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.values && data.values.length > 0) {
-          const parsed = parseSheetRows<Cuenta>(data.values, [
-            "ID_Cuenta", "Nombre_Cuenta", "Tipo_Cuenta", "Numero_Cuenta", 
-            "Banco", "Balance_Actual", "Divisa", "Estado"
-          ]);
-          if (parsed.length > 0) {
-            setCuentas(parsed);
-            loadedPestañas++;
-          }
-        }
+      if (!cuentasResponse.ok) {
+        setDebugLogs(prev => [...prev, `❌ [CUENTAS] Error HTTP de Google: ${cuentasResponse.status}`]);
+        throw new Error("Acceso a pestaña Cuentas denegado");
       }
-    } catch (e) {
-      console.warn("Error al cargar Cuentas, usando local.", e);
-    }
+      const cuentasData = await cuentasResponse.json();
+      setDebugLogs(prev => [...prev, `✓ [CUENTAS] Descarga exitosa. Registros: ${cuentasData.values ? cuentasData.values.length : 0}`]);
 
-    // 4. Fetch e integración de Contactos
-    try {
-      const response = await fetch(
+      // 4. PROCESAR CONTACTOS
+      setDebugLogs(prev => [...prev, "[CONTACTOS] Solicitando datos a Google API..."]);
+      const contactosResponse = await fetch(
         `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Contactos?key=${API_KEY}`
       );
-      if (response.ok) {
-        const data = await response.json();
-        if (data.values && data.values.length > 0) {
-          const parsed = parseSheetRows<Contacto>(data.values, [
-            "ID_Contacto", "Nombre_Empresa", "Nombre_Contacto", "RNC_Cedula", 
-            "Tipo_NCF_Defecto", "Correo", "Telefono", "Direccion", "Tipo_Contacto"
-          ]);
-          if (parsed.length > 0) {
-            setContactos(parsed);
-            loadedPestañas++;
-          }
+      if (!contactosResponse.ok) {
+        setDebugLogs(prev => [...prev, `❌ [CONTACTOS] Error HTTP de Google: ${contactosResponse.status}`]);
+        throw new Error("Acceso a pestaña Contactos denegado");
+      }
+      const contactosData = await contactosResponse.json();
+      setDebugLogs(prev => [...prev, `✓ [CONTACTOS] Descarga exitosa. Registros: ${contactosData.values ? contactosData.values.length : 0}`]);
+
+      // PARSEO Y CARGA DE ESTADOS INDEPENDIENTES
+      if (facturasData.values) {
+        const parsedFacturas = parseSheetRows<Factura>(facturasData.values, [
+          "ID_Factura", "Fecha", "Cliente_ID", "RNC_Facturado", "NCF", 
+          "Terminos_Pago", "Vencimiento", "Vendedor", "Asunto", 
+          "Total_Neto_DOP", "Cargos_Envio", "Ajustes", "Total_ITBIS_DOP", 
+          "Total_General_DOP", "Estado_Pago"
+        ]);
+        if (parsedFacturas.length > 0) {
+          setFacturas(parsedFacturas);
+          setDebugLogs(prev => [...prev, `✓ [PARSER] Facturas procesadas correctamente: ${parsedFacturas.length}`]);
         }
       }
-    } catch (e) {
-      console.warn("Error al cargar Contactos, usando local.", e);
-    }
 
-    // Si cargamos al menos la mitad de las pestañas en vivo, asumimos conexión exitosa.
-    if (loadedPestañas >= 2) {
+      if (inventarioData.values) {
+        const parsedInventario = parseSheetRows<Inventario>(inventarioData.values, [
+          "SKU", "Nombre_Articulo", "Tipo", "Unidad_Medida", 
+          "Price_Venta", "Precio_Compra", "Stock_Actual", "Stock_Minimo"
+        ]);
+        const sanitizedInventario = parsedInventario.map(item => ({
+          ...item,
+          Categoria: item.Categoria || "Productos Plásticos",
+          Cuenta_Contable: item.Cuenta_Contable || "Inventario Central"
+        }));
+        if (sanitizedInventario.length > 0) {
+          setInventario(sanitizedInventario);
+          setDebugLogs(prev => [...prev, `✓ [PARSER] Inventario mapeado con éxito: ${sanitizedInventario.length} artículos`]);
+        }
+      }
+
+      if (cuentasData.values) {
+        const parsedCuentas = parseSheetRows<Cuenta>(cuentasData.values, [
+          "ID_Cuenta", "Nombre_Cuenta", "Tipo_Cuenta", "Numero_Cuenta", 
+          "Banco", "Balance_Actual", "Divisa", "Estado"
+        ]);
+        if (parsedCuentas.length > 0) {
+          setCuentas(parsedCuentas);
+          setDebugLogs(prev => [...prev, `✓ [PARSER] Cuentas contables procesadas: ${parsedCuentas.length}`]);
+        }
+      }
+
+      if (contactosData.values) {
+        const parsedContactos = parseSheetRows<Contacto>(contactosData.values, [
+          "ID_Contacto", "Nombre_Empresa", "Nombre_Contacto", "RNC_Cedula", 
+          "Tipo_NCF_Defecto", "Correo", "Telefono", "Direccion", "Tipo_Contacto"
+        ]);
+        if (parsedContactos.length > 0) {
+          setContactos(parsedContactos);
+          setDebugLogs(prev => [...prev, `✓ [PARSER] Directorio de contactos cargado: ${parsedContactos.length}`]);
+        }
+      }
+
       setIsUsingFallback(false);
       setSheetFetchStatus("Google Sheets en tiempo real conectado.");
-    } else {
+      setDebugLogs(prev => [...prev, "🚀 [ÉXITO] Sincronización completa. Base de datos en vivo activa."]);
+
+    } catch (error: any) {
+      console.warn("Fallo en Sheets API.", error);
       setIsUsingFallback(true);
-      setSheetFetchStatus("Se activó el motor local de contingencia (algunas pestañas de Google Sheets tienen restricciones de formato).");
-    }
-    setIsLoading(false);
-  };
-
-  useEffect(() => {
-    fetchGoogleSheetsData();
-  }, []);
-
-  // Post Command to Make Webhook
-  const handleSendCommand = async (commandText: string) => {
-    if (!commandText.trim()) return;
-    setIsSendingCommand(true);
-    setCommandFeedback({ status: "idle", message: "" });
-
-    try {
-      const response = await fetch(MAKE_WEBHOOK_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          source: "Sandero ERP Dashboard",
-          action: "comando_gerente",
-          timestamp: new Date().toISOString(),
-          command: commandText,
-          author: "Gerente General",
-          meta: {
-            app_location: window.location.href,
-            active_sheet: SHEET_ID
-          }
-        })
-      });
-
-      if (response.ok) {
-        setCommandFeedback({ 
-          status: "success", 
-          message: "Orden transmitida exitosamente al Gerente en Make Webhook." 
-        });
-        setManagerCommand("");
-      } else {
-        throw new Error("Respuesta no exitosa del webhook");
-      }
-    } catch (err: any) {
-      setCommandFeedback({ 
-        status: "success", 
-        message: "Orden transmitida! La petición POST fue enviada a la automatización de Make exitosamente." 
-      });
+      setSheetFetchStatus("Usando base de datos alternativa de respaldo local.");
+      // Capturamos el error exacto que provocó la caída para leerlo en la pantalla
+      setDebugLogs(prev => [...prev, `❌ [FALLO CRÍTICO] La sincronización falló: ${error.message}`]);
     } finally {
-      setIsSendingCommand(false);
-      setTimeout(() => {
-        setCommandFeedback({ status: "idle", message: "" });
-      }, 5000);
+      setIsLoading(false);
     }
   };
-
   // Fast select preset commands
   const applyCommandPreset = (presetText: string) => {
     setManagerCommand(presetText);
